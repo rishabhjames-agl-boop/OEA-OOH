@@ -73,12 +73,11 @@ em{font-style:italic}
 .who{display:flex;align-items:baseline;gap:10px}
 .who label{font-family:var(--ui);font-size:10.5px;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-mute)}
 .who select,.who input{
-  font-family:var(--body);font-size:14px;font-style:italic;color:var(--ink);
+  font-family:var(--ui);font-size:14px;font-weight:500;color:var(--ink);
   border-bottom:1px solid var(--rule);padding:2px 4px;min-width:80px;
   transition:border-color .2s;
 }
 .who select:focus,.who input:focus{outline:0;border-color:var(--ink)}
-.who select{font-style:italic}
 .nav-tabs{display:flex;gap:24px}
 .nav-tab{
   font-family:var(--ui);font-size:11px;text-transform:uppercase;letter-spacing:0.16em;
@@ -185,23 +184,40 @@ em{font-style:italic}
 
 /* ─── filters strip ─── */
 .filters{
-  display:flex;flex-wrap:wrap;align-items:center;gap:6px 24px;
-  padding:18px 0;border-top:1px solid var(--rule-soft);border-bottom:1px solid var(--rule-soft);
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
   margin-bottom:32px;
 }
-.filters .group-label{
-  font-family:var(--ui);font-size:10.5px;text-transform:uppercase;letter-spacing:0.16em;
-  color:var(--ink-faint);margin-right:8px;
+.filter-group{
+  display:grid;
+  grid-template-columns:100px 1fr;
+  align-items:baseline;
+  gap:32px;
+  padding:14px 0;
+  border-top:1px solid var(--rule-soft);
+}
+.filter-group:first-child{border-top:0}
+.group-label{
+  font-family:var(--ui);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--ink);
+  padding-top:2px;
+}
+.filter-chips{
+  display:flex;flex-wrap:wrap;gap:4px 22px;
 }
 .filter-chip{
-  font-family:var(--body);font-style:italic;font-size:15px;color:var(--ink-mute);
+  font-family:var(--ui);font-weight:500;font-size:14px;color:var(--ink-mute);
   padding:2px 0;border-bottom:1px solid transparent;
   transition:border-color .15s,color .15s;
 }
 .filter-chip:hover{color:var(--ink)}
-.filter-chip.active{color:var(--ink);border-bottom-color:var(--ink)}
+.filter-chip.active{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
 .filter-result{
-  margin-left:auto;font-family:var(--body);font-style:italic;font-size:14px;color:var(--ink-mute);
+  padding:12px 0 14px;
+  border-top:1px solid var(--rule-soft);
+  text-align:right;
+  font-family:var(--body);font-style:italic;font-size:13px;color:var(--ink-mute);
   font-variant-numeric:oldstyle-nums;
 }
 
@@ -353,7 +369,7 @@ em{font-style:italic}
 .thread-add textarea:focus{outline:0;border-color:var(--ink);background:rgba(255,255,255,0.7)}
 .thread-actions{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
 .btn{
-  font-family:var(--body);font-style:italic;font-size:14.5px;color:var(--ink);
+  font-family:var(--ui);font-weight:500;font-size:13px;color:var(--ink);
   border-bottom:1px solid var(--ink);padding:2px 0;
   transition:opacity .15s;
 }
@@ -515,6 +531,8 @@ em{font-style:italic}
   .site-copy{border-left:0;padding-left:0;border-top:1px solid var(--rule);padding-top:24px}
   .site-spec-table{grid-template-columns:repeat(2,1fr)}
   .timeline-head,.tl-row{grid-template-columns:160px repeat(6,1fr);font-size:12px}
+  .filter-group{grid-template-columns:1fr;gap:8px}
+  .filter-result{text-align:left}
   .build{grid-template-columns:1fr;gap:18px}
   .build-letter{font-size:42px}
   .nav-tabs{gap:16px}
@@ -599,25 +617,37 @@ em{font-style:italic}
     </header>
 
     <div class="filters" id="filters">
-      <span class="group-label">Region</span>
-      <button class="filter-chip active" data-filter="region" data-value="all">All</button>
-      <button class="filter-chip" data-filter="region" data-value="metro">Metro</button>
-      <button class="filter-chip" data-filter="region" data-value="regional">Regional</button>
+      <div class="filter-group">
+        <span class="group-label">Region</span>
+        <div class="filter-chips">
+          <button class="filter-chip active" data-filter="region" data-value="all">All</button>
+          <button class="filter-chip" data-filter="region" data-value="metro">Metro</button>
+          <button class="filter-chip" data-filter="region" data-value="regional">Regional</button>
+        </div>
+      </div>
 
-      <span class="group-label">Type</span>
-      <button class="filter-chip active" data-filter="type" data-value="all">Everything</button>
-      <button class="filter-chip" data-filter="type" data-value="rail">Rail</button>
-      <button class="filter-chip" data-filter="type" data-value="road">Roadside</button>
-      <button class="filter-chip" data-filter="type" data-value="street">Street furniture</button>
-      <button class="filter-chip" data-filter="type" data-value="retail">Retail</button>
+      <div class="filter-group">
+        <span class="group-label">Type</span>
+        <div class="filter-chips">
+          <button class="filter-chip active" data-filter="type" data-value="all">All</button>
+          <button class="filter-chip" data-filter="type" data-value="rail">Rail</button>
+          <button class="filter-chip" data-filter="type" data-value="road">Roadside</button>
+          <button class="filter-chip" data-filter="type" data-value="street">Street furniture</button>
+          <button class="filter-chip" data-filter="type" data-value="retail">Retail</button>
+        </div>
+      </div>
 
-      <span class="group-label">Status</span>
-      <button class="filter-chip active" data-filter="status" data-value="all">All</button>
-      <button class="filter-chip" data-filter="status" data-value="pending">Pending</button>
-      <button class="filter-chip" data-filter="status" data-value="approved">Approved</button>
-      <button class="filter-chip" data-filter="status" data-value="rejected">Rejected</button>
+      <div class="filter-group">
+        <span class="group-label">Status</span>
+        <div class="filter-chips">
+          <button class="filter-chip active" data-filter="status" data-value="all">All</button>
+          <button class="filter-chip" data-filter="status" data-value="pending">Pending</button>
+          <button class="filter-chip" data-filter="status" data-value="approved">Approved</button>
+          <button class="filter-chip" data-filter="status" data-value="rejected">Rejected</button>
+        </div>
+      </div>
 
-      <span class="filter-result" id="filterResult"></span>
+      <div class="filter-result" id="filterResult"></div>
     </div>
 
     <div class="sites" id="siteList"></div>
@@ -683,7 +713,7 @@ const WEEKS = [
 // Direction, market area, and descriptions sourced from oOh! OVO Energy $105k Site cards.pdf
 const SITES = [
   // Rail Consec - Small Portrait (all W1 - 20 Jul)
-  {id:"ADJ-RAIL/4761-B-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 4/5 facing toilets, north facing. One of two."},
+  {id:"ADJ-RAIL/4761-B-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 4/5 facing toilets, north facing. One of two.",noImg:true},
   {id:"ADJ-RAIL/4761-E-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 2/3 outside Managers Office facing escalators, west facing. One of two."},
   {id:"ADJ/RAIL/2809-A-2",loc:"Flagstaff Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform facing west escalator, west facing. Two of two."},
   {id:"ADJ-RAIL/5192-A-2",loc:"Melbourne Central Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"Near Swanston St. exit, left-hand side of ticket barriers, east facing. One of two."},
@@ -859,7 +889,7 @@ function renderSiteEntry(s,n){
 
   const statusLabel = st.status==="approved" ? "Approved" : st.status==="rejected" ? "Rejected" : "Pending";
   const statusClass = st.status||"pending";
-  const hasImage = s.type==="rail" || s.type==="road";
+  const hasImage = (s.type==="rail" || s.type==="road") && !s.noImg;
   const imgSlug = s.id.replace(/\//g,"_");
 
   return `
