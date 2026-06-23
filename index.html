@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
 <style>
 :root{
   --paper:#F1ECE2;
@@ -221,80 +223,262 @@ em{font-style:italic}
   font-variant-numeric:oldstyle-nums;
 }
 
-/* ─── site list — editorial entries ─── */
-.sites{display:flex;flex-direction:column;}
+/* ─── site cards — compact grid ─── */
+.sites{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:24px;
+}
 .site{
-  display:grid;grid-template-columns:80px 1fr 1.1fr;gap:48px;
-  padding:40px 0;border-top:1px solid var(--rule);
-  position:relative;
-}
-.site:first-child{border-top:0;padding-top:8px}
-.site-folio{
-  font-family:var(--serif);font-style:italic;font-weight:400;
-  font-size:14px;color:var(--ink-faint);padding-top:8px;letter-spacing:0.02em;
-  font-variant-numeric:oldstyle-nums;
-}
-.site-folio .id{
-  display:block;font-style:normal;font-family:var(--ui);font-size:10px;
-  letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px;
-}
-.site-main{}
-.site-img{
-  position:relative;
-  margin-bottom:24px;
-  background:var(--paper-deep);
-  aspect-ratio:1.72/1;
+  background:rgba(255,255,255,0.4);
+  border:1px solid var(--rule);
+  cursor:pointer;
+  display:flex;flex-direction:column;
+  padding:0;
   overflow:hidden;
-  border:1px solid var(--rule-soft);
+  opacity:0;
+  transform:translateY(14px);
+  animation:cardIn .55s cubic-bezier(.2,.65,.2,1) forwards;
+  animation-delay:calc(var(--i,0) * 24ms);
+  transition:transform .25s cubic-bezier(.2,.65,.2,1),
+             border-color .2s ease,
+             background .2s ease,
+             box-shadow .25s ease;
+  will-change:transform;
+}
+@keyframes cardIn{
+  to{opacity:1;transform:translateY(0)}
+}
+.site:hover{
+  transform:translateY(-4px);
+  border-color:var(--ink);
+  background:rgba(255,255,255,0.85);
+  box-shadow:0 14px 32px -12px rgba(26,22,18,0.2);
+}
+.site:active{
+  transform:translateY(-1px);
+  transition-duration:.08s;
+}
+.site:hover .site-img img{
+  transform:scale(1.08) translateY(-2%);
+}
+.site-img{
+  aspect-ratio:16/10;
+  background:var(--paper-deep);
+  overflow:hidden;
+  border-bottom:1px solid var(--rule-soft);
+  margin:0;
 }
 .site-img img{
   width:100%;height:100%;
   object-fit:cover;
   display:block;
+  transition:transform .6s cubic-bezier(.25,.7,.3,1);
 }
-.site-cat{
-  font-family:var(--ui);font-size:10.5px;text-transform:uppercase;letter-spacing:0.16em;
-  color:var(--ink-mute);margin-bottom:14px;
-  display:flex;gap:14px;align-items:center;
+.site-noimg{
+  aspect-ratio:16/10;
+  background:var(--paper-deep);
+  display:flex;align-items:center;justify-content:center;
+  border-bottom:1px solid var(--rule-soft);
+  position:relative;
+  overflow:hidden;
 }
-.site-cat .dot{width:3px;height:3px;background:var(--ink-mute);border-radius:50%}
-.site-cat .status{font-family:var(--ui);font-style:normal;letter-spacing:0.16em}
-.site-cat .status.pending{color:var(--ink-faint)}
-.site-cat .status.approved{color:var(--approve)}
-.site-cat .status.rejected{color:var(--reject)}
-.site-title{
+.site-noimg::before{
+  content:attr(data-letter);
+  position:absolute;
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:160px;line-height:0.85;
+  color:var(--ink);
+  opacity:0.06;
+  letter-spacing:-0.02em;
+  pointer-events:none;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  transition:transform .6s cubic-bezier(.25,.7,.3,1),opacity .3s ease;
+}
+.site:hover .site-noimg::before{
+  transform:translate(-50%,-50%) scale(1.08);
+  opacity:0.1;
+}
+.site-noimg-label{
+  font-family:var(--ui);font-size:10.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--ink-mute);text-align:center;padding:0 16px;
+  position:relative;z-index:1;
+}
+.site-body{
+  padding:14px 16px 14px;
+  display:flex;flex-direction:column;gap:8px;
+  flex:1;
+}
+.site-folio-sm{
+  font-family:var(--ui);font-size:10px;font-weight:500;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--ink-faint);
+  display:flex;justify-content:space-between;gap:8px;
+}
+.site-folio-sm .id{color:var(--ink-mute)}
+.site-title-sm{
   font-family:var(--serif);font-weight:500;
-  font-size:clamp(28px,3vw,38px);line-height:1.05;letter-spacing:-0.012em;
-  margin-bottom:12px;
+  font-size:20px;line-height:1.12;
+  color:var(--ink);letter-spacing:-0.005em;
 }
-.site-title em{font-style:italic;font-size:15px;color:var(--ink-soft);
-  margin-bottom:22px;
+.site-sub-sm{
+  font-family:var(--body);font-size:13px;color:var(--ink-mute);
+  margin-top:-2px;
 }
-.site-desc{
-  font-family:var(--body);font-style:italic;font-weight:300;
-  font-size:17px;line-height:1.5;color:var(--ink-soft);
-  margin-bottom:18px;max-width:58ch;
-  font-variant-numeric:oldstyle-nums;
+.site-meta-sm{
+  font-family:var(--ui);font-size:11.5px;color:var(--ink-mute);
+  display:flex;flex-wrap:wrap;gap:3px 8px;line-height:1.4;
 }
-.site-meta .dim{
-  font-style:italic;color:var(--ink-mute);
-  font-variant-numeric:oldstyle-nums;
+.site-meta-sm .dot{color:var(--ink-faint);font-size:9px;line-height:1.4}
+.site-meta-sm .wk{color:var(--ink);font-weight:600}
+.site-foot{
+  margin-top:auto;padding-top:10px;
+  border-top:1px dashed var(--rule-soft);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
-.site-spec-table{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:18px 24px;
-  padding:18px 0;border-top:1px solid var(--rule-soft);border-bottom:1px solid var(--rule-soft);
-  margin-bottom:22px;
+.site-status-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--ui);font-size:10.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.12em;
 }
-.spec-cell .k{
-  font-family:var(--ui);font-size:9.5px;text-transform:uppercase;letter-spacing:0.16em;
-  color:var(--ink-faint);margin-bottom:4px;
+.site-status-pill::before{
+  content:"";width:7px;height:7px;border-radius:50%;background:currentColor;
 }
-.spec-cell .v{
-  font-family:var(--body);font-size:14.5px;color:var(--ink);
-  font-variant-numeric:oldstyle-nums;
+.site-status-pill.pending::before{
+  animation:dotPulse 2.4s ease-in-out infinite;
+}
+@keyframes dotPulse{
+  0%,100%{opacity:0.35;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.2)}
+}
+.site-status-pill.pending{color:var(--ink-faint)}
+.site-status-pill.approved{color:var(--approve)}
+.site-status-pill.rejected{color:var(--reject)}
+.site-comments-count{
+  font-family:var(--ui);font-size:11px;color:var(--ink-mute);
+}
+/* ─── drawer (site detail) ─── */
+.drawer-backdrop{
+  position:fixed;inset:0;background:rgba(26,22,18,0.35);
+  opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:150;
+}
+.drawer-backdrop.open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;
+  width:min(620px,94vw);
+  background:var(--paper);
+  border-left:1px solid var(--rule);
+  transform:translateX(100%);
+  transition:transform .25s ease;
+  z-index:200;
+  overflow-y:auto;
+  box-shadow:-12px 0 32px rgba(26,22,18,0.06);
+}
+.drawer.open{transform:translateX(0)}
+.drawer-inner{padding:24px 36px 60px;}
+.drawer-head{
+  position:sticky;top:0;background:var(--paper);
+  margin:0 -36px 24px;padding:18px 36px;
+  border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  z-index:5;
+}
+.drawer-head-id{
+  font-family:var(--ui);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-mute);
+}
+.drawer-close{
+  font-family:var(--ui);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--ink);
+  display:flex;align-items:center;gap:6px;
+}
+.drawer-close::after{content:"✕";font-size:14px;font-weight:400}
+.drawer-close:hover{opacity:0.6}
+
+.detail-img{
+  aspect-ratio:1.72/1;background:var(--paper-deep);
+  margin-bottom:20px;overflow:hidden;
+  border:1px solid var(--rule-soft);
+}
+.detail-img img{width:100%;height:100%;object-fit:cover;display:block}
+.detail-cat{
+  font-family:var(--ui);font-size:10.5px;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-mute);
+  margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;
+}
+.detail-cat .dot{width:3px;height:3px;background:var(--ink-mute);border-radius:50%}
+.detail-cat .status.pending{color:var(--ink-faint)}
+.detail-cat .status.approved{color:var(--approve)}
+.detail-cat .status.rejected{color:var(--reject)}
+.detail-title{
+  font-family:var(--serif);font-weight:500;
+  font-size:30px;line-height:1.08;letter-spacing:-0.01em;
+  margin-bottom:6px;
+}
+.detail-title .sub{
+  display:block;font-family:var(--body);font-weight:400;font-size:14px;
+  color:var(--ink-mute);margin-top:6px;letter-spacing:0;
+}
+.detail-meta{
+  font-family:var(--body);font-size:14px;color:var(--ink-soft);
+  margin-bottom:16px;
+}
+.detail-desc{
+  font-family:var(--body);font-style:italic;font-weight:400;
+  font-size:15px;line-height:1.55;color:var(--ink-soft);
+  margin-bottom:20px;
 }
 
-/* week strip */
+/* ─── map view ─── */
+.map-wrap{
+  position:relative;
+  border:1px solid var(--rule);
+  background:var(--paper-deep);
+  margin-bottom:20px;
+}
+#map{
+  height:min(70vh,640px);
+  width:100%;
+  background:var(--paper-deep);
+}
+.map-legend{
+  display:flex;flex-wrap:wrap;gap:8px 18px;
+  padding:14px 0;
+  font-family:var(--ui);font-size:12px;color:var(--ink-soft);
+}
+.map-legend .swatch{
+  display:inline-flex;align-items:center;gap:7px;
+}
+.map-legend .swatch::before{
+  content:"";width:11px;height:11px;border-radius:50%;
+  border:2px solid var(--paper);box-shadow:0 0 0 1px var(--ink-faint);
+  background:currentColor;
+}
+.map-legend .swatch.rail{color:#4A5D3F}
+.map-legend .swatch.road{color:#1A1612}
+/* leaflet popup styling override */
+.leaflet-popup-content-wrapper{
+  border-radius:0;background:var(--paper);
+  border:1px solid var(--rule);
+  box-shadow:0 4px 12px rgba(26,22,18,0.1);
+  font-family:var(--body);
+}
+.leaflet-popup-tip{background:var(--paper);border:1px solid var(--rule)}
+.leaflet-popup-content{margin:14px 16px;font-size:13.5px;line-height:1.45}
+.leaflet-popup-content strong{font-family:var(--serif);font-weight:500;font-size:16px;display:block;margin-bottom:4px}
+.leaflet-popup-content .pop-meta{font-family:var(--ui);font-size:10.5px;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-mute);margin:2px 0 6px}
+.leaflet-popup-content a{
+  font-family:var(--ui);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.12em;color:var(--ink);
+  border-bottom:1px solid var(--ink);text-decoration:none;
+}
+.leaflet-popup-content a:hover{opacity:0.6}
+.leaflet-container{font-family:var(--ui)}
+
+/* week strip (used in drawer) */
 .week-strip{
   display:grid;grid-template-columns:repeat(6,1fr);gap:0;
   margin-bottom:24px;
@@ -302,72 +486,91 @@ em{font-style:italic}
 .wk{
   text-align:center;padding:10px 4px;
   border-right:1px solid var(--rule-soft);
-  position:relative;
+  border-top:1px solid var(--rule-soft);
+  border-bottom:1px solid var(--rule-soft);
 }
-.wk:last-child{border-right:0}
+.wk:first-child{border-left:1px solid var(--rule-soft)}
 .wk .d{
-  font-family:var(--body);font-style:italic;font-size:11.5px;color:var(--ink-faint);
-  margin-bottom:6px;font-variant-numeric:oldstyle-nums;
+  font-family:var(--ui);font-size:10px;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--ink-faint);margin-bottom:4px;
 }
 .wk .m{
   font-family:var(--serif);font-weight:500;font-size:16px;color:var(--ink-faint);
-  font-variant-numeric:oldstyle-nums;
 }
 .wk.live{background:var(--highlight)}
 .wk.live .d{color:var(--ink-soft)}
-.wk.live .m{color:var(--ink);font-weight:400}
+.wk.live .m{color:var(--ink)}
 
-/* site copy panel */
-.site-copy{
-  border-left:1px solid var(--rule);padding-left:32px;
-  display:flex;flex-direction:column;gap:14px;
+.site-spec-table{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:14px 24px;
+  padding:14px 0;border-top:1px solid var(--rule-soft);border-bottom:1px solid var(--rule-soft);
+  margin-bottom:22px;
 }
-.copy-section{}
+.spec-cell .k{
+  font-family:var(--ui);font-size:9.5px;text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--ink-faint);margin-bottom:4px;font-weight:500;
+}
+.spec-cell .v{
+  font-family:var(--body);font-size:14px;color:var(--ink);
+}
+
+/* site copy panel (in drawer) */
+.site-copy{
+  display:flex;flex-direction:column;gap:14px;
+  margin-bottom:24px;padding-top:8px;
+}
 .copy-section .k{
-  font-family:var(--ui);font-size:9.5px;text-transform:uppercase;letter-spacing:0.16em;
-  color:var(--ink-faint);margin-bottom:6px;
+  font-family:var(--ui);font-size:9.5px;text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--ink-faint);margin-bottom:5px;font-weight:500;
 }
 .copy-section textarea{
-  width:100%;border-bottom:1px solid var(--rule-soft);padding:4px 0 10px;
-  font-family:var(--body);font-size:15.5px;color:var(--ink);
+  width:100%;border-bottom:1px solid var(--rule);padding:4px 0 10px;
+  font-family:var(--body);font-size:15px;color:var(--ink);
   resize:none;min-height:22px;line-height:1.4;
   transition:border-color .15s;
 }
 .copy-section textarea:focus{outline:0;border-bottom-color:var(--ink)}
-.copy-section textarea::placeholder{font-style:italic;color:var(--ink-faint)}
+.copy-section textarea::placeholder{color:var(--ink-faint)}
 
 .thread{
-  margin-top:8px;padding-top:14px;border-top:1px dashed var(--rule);
+  padding-top:18px;border-top:1px solid var(--rule);
+}
+.thread-title{
+  font-family:var(--ui);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.14em;color:var(--ink);
+  margin-bottom:12px;
 }
 .thread-empty{
   font-family:var(--body);font-style:italic;font-size:13.5px;color:var(--ink-faint);
 }
-.note{padding:8px 0;border-bottom:1px solid var(--rule-soft);font-size:14.5px}
-.note:last-child{border-bottom:0}
+.note{padding:10px 0;border-bottom:1px solid var(--rule-soft);}
+.note:last-of-type{border-bottom:0}
 .note-head{
   display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;
-  font-family:var(--ui);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;
+  font-family:var(--ui);font-size:10px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;
 }
 .note-head .who{color:var(--ink)}
-.note-head .who .role{color:var(--ink-mute);font-style:italic;font-family:var(--body);text-transform:none;letter-spacing:0.01em;margin-left:6px}
-.note-head .when{color:var(--ink-faint);font-style:italic;font-family:var(--body);text-transform:none;letter-spacing:0.01em;font-variant-numeric:oldstyle-nums}
-.note-body{font-family:var(--body);font-size:14.5px;color:var(--ink-soft);line-height:1.5}
+.note-head .who .role{color:var(--ink-mute);font-weight:400;text-transform:none;letter-spacing:0.01em;margin-left:6px;font-family:var(--body);font-size:11.5px;}
+.note-head .when{color:var(--ink-faint);font-weight:400;text-transform:none;letter-spacing:0.01em;font-family:var(--body);font-size:11.5px;}
+.note-body{font-family:var(--body);font-size:14px;color:var(--ink-soft);line-height:1.5}
 .note-delete{
-  font-family:var(--body);font-style:italic;font-size:12px;color:var(--ink-faint);
-  margin-top:4px;
+  font-family:var(--ui);font-size:10px;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--ink-faint);margin-top:4px;
 }
 .note-delete:hover{color:var(--reject)}
 
 .thread-add{
-  margin-top:10px;display:flex;flex-direction:column;gap:8px;
+  margin-top:14px;display:flex;flex-direction:column;gap:10px;
 }
 .thread-add textarea{
-  width:100%;border:1px solid var(--rule);padding:10px 12px;background:rgba(255,255,255,0.4);
-  font-family:var(--body);font-size:14.5px;min-height:54px;resize:vertical;line-height:1.5;
+  width:100%;border:1px solid var(--rule);padding:10px 12px;background:rgba(255,255,255,0.5);
+  font-family:var(--body);font-size:14px;min-height:60px;resize:vertical;line-height:1.5;
   transition:border-color .15s,background .15s;
 }
-.thread-add textarea:focus{outline:0;border-color:var(--ink);background:rgba(255,255,255,0.7)}
-.thread-actions{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.thread-add textarea:focus{outline:0;border-color:var(--ink);background:rgba(255,255,255,0.85)}
+.thread-actions{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .btn{
   font-family:var(--ui);font-weight:500;font-size:13px;color:var(--ink);
   border-bottom:1px solid var(--ink);padding:2px 0;
@@ -506,7 +709,21 @@ em{font-style:italic}
 
 /* views */
 .view-panel{display:none}
-.view-panel.active{display:block}
+.view-panel.active{display:block;animation:viewIn .4s cubic-bezier(.2,.65,.2,1) forwards}
+@keyframes viewIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Leaflet circle markers — hover grow */
+.leaflet-interactive{
+  transition:stroke-width .15s ease, fill-opacity .15s ease;
+  cursor:pointer;
+}
+.leaflet-interactive:hover{
+  stroke-width:3.5;
+  fill-opacity:1;
+}
 
 /* utility */
 .muted{color:var(--ink-mute)}
@@ -571,6 +788,7 @@ em{font-style:italic}
       </div>
       <nav class="nav-tabs">
         <button class="nav-tab active" data-view="sites">Sites</button>
+        <button class="nav-tab" data-view="map">Map</button>
         <button class="nav-tab" data-view="timeline">Flight</button>
         <button class="nav-tab" data-view="build">Build</button>
         <button class="nav-tab" data-view="log">Ledger</button>
@@ -653,10 +871,26 @@ em{font-style:italic}
     <div class="sites" id="siteList"></div>
   </section>
 
+  <!-- MAP VIEW -->
+  <section class="section view-panel" id="view-map">
+    <header class="section-head">
+      <div class="section-num">II</div>
+      <h2 class="section-title">Every panel on a map.</h2>
+      <p class="section-dek">Click any pin to open the site card. Rail sites cluster around Melbourne's CBD; road sites stretch from Melbourne Airport out to Bairnsdale, Warrnambool, Wodonga.</p>
+    </header>
+    <div class="map-wrap">
+      <div id="map"></div>
+    </div>
+    <div class="map-legend">
+      <span class="swatch rail">Rail panels</span>
+      <span class="swatch road">Roadside billboards</span>
+    </div>
+  </section>
+
   <!-- TIMELINE VIEW -->
   <section class="section view-panel" id="view-timeline">
     <header class="section-head">
-      <div class="section-num">II</div>
+      <div class="section-num">III</div>
       <h2 class="section-title">The flight, week by week.</h2>
       <p class="section-dek">Six weeks. Each site flies its own pattern — most for one week, the retail and street-furniture networks across the run, with the largest load in week one.</p>
     </header>
@@ -666,7 +900,7 @@ em{font-style:italic}
   <!-- BUILD VIEW -->
   <section class="section view-panel" id="view-build">
     <header class="section-head">
-      <div class="section-num">III</div>
+      <div class="section-num">IV</div>
       <h2 class="section-title">What to build.</h2>
       <p class="section-dek">All forty-five entries covered by a handful of unique creative specs. Each spec lists which sites it serves and the earliest week any of them go live.</p>
     </header>
@@ -676,7 +910,7 @@ em{font-style:italic}
   <!-- LOG VIEW -->
   <section class="section view-panel" id="view-log">
     <header class="section-head">
-      <div class="section-num">IV</div>
+      <div class="section-num">V</div>
       <h2 class="section-title">The ledger.</h2>
       <p class="section-dek">Every approval, rejection, and comment, in the order it happened. Export when you need a paper trail.</p>
     </header>
@@ -696,6 +930,18 @@ em{font-style:italic}
 
 </main>
 
+<!-- Site detail drawer -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-inner">
+    <div class="drawer-head">
+      <span class="drawer-head-id" id="drawerHeadId"></span>
+      <button class="drawer-close" id="drawerClose">Close</button>
+    </div>
+    <div id="drawerContent"></div>
+  </div>
+</aside>
+
 <script>
 // ─────────────────────────────────────────────────────────────────
 // DATA
@@ -713,49 +959,49 @@ const WEEKS = [
 // Direction, market area, and descriptions sourced from oOh! OVO Energy $105k Site cards.pdf
 const SITES = [
   // Rail Consec - Small Portrait (all W1 - 20 Jul)
-  {id:"ADJ-RAIL/4761-B-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 4/5 facing toilets, north facing. One of two.",noImg:true},
-  {id:"ADJ-RAIL/4761-E-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 2/3 outside Managers Office facing escalators, west facing. One of two."},
-  {id:"ADJ/RAIL/2809-A-2",loc:"Flagstaff Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform facing west escalator, west facing. Two of two."},
-  {id:"ADJ-RAIL/5192-A-2",loc:"Melbourne Central Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"Near Swanston St. exit, left-hand side of ticket barriers, east facing. One of two."},
+  {id:"ADJ-RAIL/4761-B-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.81836,lng:144.96687,spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 4/5 facing toilets, north facing. One of two.",noImg:true},
+  {id:"ADJ-RAIL/4761-E-2",loc:"Flinders Street Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.81836,lng:144.96687,spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform 2/3 outside Managers Office facing escalators, west facing. One of two."},
+  {id:"ADJ/RAIL/2809-A-2",loc:"Flagstaff Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.81162,lng:144.95588,spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"ADJ Lift to Platform facing west escalator, west facing. Two of two."},
+  {id:"ADJ-RAIL/5192-A-2",loc:"Melbourne Central Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.002 × 1.777 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.81005,lng:144.96281,spec:"R1",direction:"Concourse",market:"Melbourne — Central & West",desc:"Near Swanston St. exit, left-hand side of ticket barriers, east facing. One of two."},
   // Rail Consec - Medium Portrait (all W1 - 20 Jul)
-  {id:"ADJ-RAIL/5525-B-3",loc:"Arden Station",sub:"North Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:3,value:6585,weeks:[1],spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"Arden Station — Concourse B1 A."},
-  {id:"ADJ-RAIL/6041-D-2",loc:"Parkville Station",sub:"Carlton",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R2",direction:"Platform",market:"Melbourne — Central & West",desc:"Parkville Station — Platform B4 A."},
-  {id:"ADJ-RAIL/6041-B-2",loc:"Parkville Station",sub:"Carlton",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"Parkville Station — Concourse B2 A."},
-  {id:"ADJ-RAIL/6042-B-2",loc:"ANZAC Station (Domain)",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"ANZAC Station — Concourse B1 D."},
-  {id:"ADJ-RAIL/6044-K-2",loc:"State Library Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"State Library — Basement B5 H."},
-  {id:"ADJ-RAIL/6043-H-2",loc:"Town Hall Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"Town Hall — Basement B3 A."},
+  {id:"ADJ-RAIL/5525-B-3",loc:"Arden Station",sub:"North Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:3,value:6585,weeks:[1],lat:-37.79363,lng:144.94289,spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"Arden Station — Concourse B1 A."},
+  {id:"ADJ-RAIL/6041-D-2",loc:"Parkville Station",sub:"Carlton",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.78603,lng:144.95234,spec:"R2",direction:"Platform",market:"Melbourne — Central & West",desc:"Parkville Station — Platform B4 A."},
+  {id:"ADJ-RAIL/6041-B-2",loc:"Parkville Station",sub:"Carlton",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.78603,lng:144.95234,spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"Parkville Station — Concourse B2 A."},
+  {id:"ADJ-RAIL/6042-B-2",loc:"ANZAC Station (Domain)",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.83651,lng:144.97606,spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"ANZAC Station — Concourse B1 D."},
+  {id:"ADJ-RAIL/6044-K-2",loc:"State Library Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.81027,lng:144.96456,spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"State Library — Basement B5 H."},
+  {id:"ADJ-RAIL/6043-H-2",loc:"Town Hall Station",sub:"Melbourne",type:"rail",region:"metro",cat:"Rail Consecutive",dim:"1.2 × 2.025 m",px:"1080 × 1920 px",dur:"7s",frames:2,value:4390,weeks:[1],lat:-37.8156,lng:144.96587,spec:"R2",direction:"Concourse",market:"Melbourne — Central & West",desc:"Town Hall — Basement B3 A."},
   // Rail Large Format (W1 - 20 Jul)
-  {id:"RAIL/4761/65/1D",loc:"Flinders Street Station",sub:"Melbourne · Large format",type:"rail",region:"metro",cat:"Rail Large Format Landscape",dim:"6 × 3.375 m",px:"1920 × 1080 px",dur:"7s",frames:1,value:25000,weeks:[1],spec:"R3",direction:"Concourse",market:"Melbourne — Central & West",desc:"On Information Booth wall, north facing. The centrepiece rail format at Flinders."},
+  {id:"RAIL/4761/65/1D",loc:"Flinders Street Station",sub:"Melbourne · Large format",type:"rail",region:"metro",cat:"Rail Large Format Landscape",dim:"6 × 3.375 m",px:"1920 × 1080 px",dur:"7s",frames:1,value:25000,weeks:[1],lat:-37.81836,lng:144.96687,spec:"R3",direction:"Concourse",market:"Melbourne — Central & West",desc:"On Information Booth wall, north facing. The centrepiece rail format at Flinders."},
   // Road Large Format - Metro
-  {id:"OVD-0132N",loc:"Fitzroy North",sub:"492 Queens Parade",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.44 × 3.29 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[1],spec:"L1",direction:"Northbound",market:"Melbourne — South",desc:"Situated on the northern end of Hoddle Street on the junction of Queens Parade, this digital site captures traffic heading north onto High Street through Northcote, Thornbury and Preston."},
-  {id:"OVD-0129N",loc:"Cheltenham",sub:"Nepean Highway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.82 × 3.45 m",px:"3924 × 972 px",dur:"30s",frames:1,value:17250,weeks:[1],spec:"L4",direction:"Eastbound",market:"Melbourne — South East",desc:"Impacting inbound traffic on Nepean Hwy, capturing those heading in from the southern bayside suburbs towards Southland shopping centre and the inner bayside."},
-  {id:"OVD-0126N",loc:"North Melbourne",sub:"Bolte Bridge",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.65 × 4.39 m",px:"1836 × 432 px",dur:"60s",frames:1,value:39000,weeks:[2],spec:"L2",direction:"Northbound",market:"Melbourne — Central & West",desc:"Outbound 4. This impressive digital billboard targets traffic travelling north towards Melbourne Airport, positioned on the CityLink — a critical part of Melbourne's arterial road network that connects the inner city to the Tullamarine Freeway."},
-  {id:"3045-29-O",loc:"Melbourne Airport",sub:"Terminal Drive",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"13.5 × 3.9 m",px:"2732 × 768 px",dur:"10s",frames:1,value:43250,weeks:[6],spec:"L5",direction:"Westbound",market:"Melbourne — North",desc:"Landmark digital gantry located across Airport Drive. This high-impact, full-motion site targets departing passengers."},
-  {id:"OVD-0557",loc:"Newtown, Geelong",sub:"Cnr Princes Hwy & Kilgour St",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[1],spec:"L1",direction:"Southbound",market:"Melbourne — Central & West",desc:"At the busy intersection of Princes Hwy and Kilgour St in Geelong, next to the Geelong Football Club home ground. One of few high-impact Supersites in the area, capturing traffic heading south through the suburbs of Geelong."},
-  {id:"OVD-0137W",loc:"Thomastown",sub:"Metropolitan Ring Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.65 × 4.39 m",px:"1836 × 432 px",dur:"30s",frames:1,value:28000,weeks:[5],spec:"L2",direction:"Northbound",market:"Melbourne — North",desc:"Spectacular site on the Metropolitan Ring Rd in Melbourne's northern suburbs. The Ring Road acts as the major circumferential arterial of Melbourne, attracting a large amount of traffic heading to the Tullamarine and Hume Freeways and to the airport from the north east."},
-  {id:"OVD-0158S",loc:"Lara",sub:"Princes Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[3],spec:"L1",direction:"Westbound",market:"Melbourne — Central & West",desc:"On the Princes Freeway in Melbourne's south west. Impacts traffic heading south to Geelong, Queenscliff and Torquay, and commuters heading from Avalon and Melbourne Airports."},
-  {id:"OVD-0160E",loc:"Nunawading",sub:"Whitehorse Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[5],spec:"L1",direction:"Eastbound",market:"Melbourne — East",desc:"In the hard-to-reach eastern suburbs, in the homemaker destination suburb of Nunawading. Impacts all traffic heading east towards Springvale Road and on to EastLink, Ringwood and the outer east."},
-  {id:"OVD-0165N",loc:"St Kilda",sub:"St Kilda Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"8.96 × 2.88 m",px:"1344 × 432 px",dur:"30s",frames:1,value:21500,weeks:[1],spec:"L3",direction:"Northbound",market:"Melbourne — Central & West",desc:"On St Kilda Road, impacting all traffic feeding from the Nepean Hwy towards St Kilda Junction where travellers continue along St Kilda Road or deviate via Queens Way, Princes Hwy or Punt Road."},
-  {id:"OVD-0166S",loc:"Seaford",sub:"Frankston Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[2],spec:"L1",direction:"Southbound",market:"Melbourne — South East",desc:"Digital supersite impacting all traffic heading southbound along the Frankston Fwy from EastLink and the Mornington Peninsula Fwy towards the bayside suburbs of Frankston, Mt Eliza and Mornington."},
-  {id:"OVD-0168E",loc:"Preston",sub:"Cnr Bell St & Plenty Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.88 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:39000,weeks:[1],spec:"L2",direction:"Southbound",market:"Melbourne — North",desc:"Landmark premium digital that straddles the notoriously busy corner of Bell Street and Plenty Road, impacting traffic heading east along Bell Street and south along Plenty Road — reach and impact north-south and east-west of Preston."},
-  {id:"OVD-0171E",loc:"Yarraville",sub:"West Gate Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.88 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:39000,weeks:[3],spec:"L2",direction:"Eastbound",market:"Melbourne — Central & West",desc:"One of the heaviest traffic arterials in Melbourne. The West Gate caters to up-and-coming exclusive areas including Sanctuary Lakes, Point Cook, Williamstown, Spotswood and Yarraville. It also connects Melbourne with Geelong and the Surf Coast."},
-  {id:"OVD-0173W",loc:"Point Cook",sub:"Princes Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[6],spec:"L1",direction:"Southbound",market:"Melbourne — Central & West",desc:"Princes Freeway is Victoria's busiest regional freeway connecting Melbourne with Geelong, the Surf Coast, the Great Ocean Road and the Bellarine Peninsula. Primary access route to the growth suburbs of Hoppers Crossing, Sanctuary Lakes, Werribee and Point Cook."},
-  {id:"OVD-0194W",loc:"Southbank",sub:"CityLink / West Gate Fwy",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"9.92 × 3.12 m",px:"1344 × 432 px",dur:"30s",frames:1,value:39000,weeks:[2],spec:"L3",direction:"Westbound",market:"Melbourne — Central & West",desc:"Exceptional digital site on the southern side of the West Gate Freeway, opposite the Melbourne Exhibition Centre. Outstanding exposure to one of Melbourne's major freeways, close to CBD, Southgate, the arts precinct and the Casino."},
-  {id:"OVD-0195N",loc:"Tullamarine",sub:"Western Ring Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"19 × 4.42 m",px:"1836 × 432 px",dur:"30s",frames:1,value:34500,weeks:[3],spec:"L2",direction:"Southbound",market:"Melbourne — North",desc:"Prominent Spectacular site engaging outbound traffic on the Metropolitan Ring Road, heading towards Gladstone Park and Broadmeadows. A key Melbourne artery spanning eight lanes, connecting the western and northern suburbs to other Victorian freeways."},
-  {id:"OVD-0325E",loc:"Burwood",sub:"267 Burwood Highway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"9 × 3 m",px:"1344 × 432 px",dur:"30s",frames:1,value:21500,weeks:[4],spec:"L3",direction:"Eastbound",market:"Melbourne — South",desc:"Viewed travelling outbound on Burwood Highway, a major arterial feeding the eastern suburbs of Melbourne. Located beside Deakin University — heavy traffic flow ensures long viewing."},
-  {id:"OVD-0717E",loc:"Burnley",sub:"Monash Fwy · Burnley Tunnel",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.94 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:43250,weeks:[1],spec:"L2",direction:"Eastbound",market:"Melbourne — Central & West",desc:"Impressive digital landmark delivering incredible impact and scale through its prominent solus eye-level positioning. The first billboard seen by traffic leaving the inner city via the Burnley Tunnel as it heads south towards Chadstone."},
-  {id:"OVD-0608N",loc:"Dandenong South",sub:"Eastlink Tollway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.88 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:32000,weeks:[4],spec:"L2",direction:"Northbound",market:"Melbourne — South East",desc:"Targets northbound traffic heading toward the CBD and eastern suburbs, impacting those travelling from the Mornington Peninsula and Frankston."},
-  {id:"OVD-0180E",loc:"Footscray",sub:"Cnr Buckley & Victoria Sts",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"5.76 × 2.88 m",px:"800 × 400 px",dur:"30s",frames:1,value:15000,weeks:[1],spec:"L6",direction:"Eastbound",market:"Melbourne — Central & West",desc:"At a busy intersection, this digital site can be seen from three different directions by traffic from Footscray, Yarraville and Sunshine."},
-  {id:"OVD-0190E",loc:"Glen Iris",sub:"Monash Freeway",type:"road",region:"metro",cat:"Road Large Format · Portrait",dim:"5.12 × 7.68 m",px:"512 × 768 px",dur:"30s",frames:1,value:39000,weeks:[1],spec:"L7",direction:"Southbound",market:"Melbourne — South",desc:"Located after the CityLink / Monash Fwy interchange at Toorak Road. This digital portrait impacts all traffic heading outbound on the Monash Fwy to the outer south eastern suburbs."},
-  {id:"OVD-0709N",loc:"West Melbourne",sub:"Bolte Bridge",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.94 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:39000,weeks:[5],spec:"L2",direction:"Northbound",market:"Melbourne — Central & West",desc:"Outbound 1. The first digital billboard seen by motorists heading out of Melbourne's inner city via the CityLink. Long, clean, unobstructed viewing on one of Australia's busiest motorways."},
+  {id:"OVD-0132N",loc:"Fitzroy North",sub:"492 Queens Parade",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.44 × 3.29 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[1],lat:-37.78229,lng:144.9877,spec:"L1",direction:"Northbound",market:"Melbourne — South",desc:"Situated on the northern end of Hoddle Street on the junction of Queens Parade, this digital site captures traffic heading north onto High Street through Northcote, Thornbury and Preston."},
+  {id:"OVD-0129N",loc:"Cheltenham",sub:"Nepean Highway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.82 × 3.45 m",px:"3924 × 972 px",dur:"30s",frames:1,value:17250,weeks:[1],lat:-37.96209,lng:145.05381,spec:"L4",direction:"Eastbound",market:"Melbourne — South East",desc:"Impacting inbound traffic on Nepean Hwy, capturing those heading in from the southern bayside suburbs towards Southland shopping centre and the inner bayside."},
+  {id:"OVD-0126N",loc:"North Melbourne",sub:"Bolte Bridge",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.65 × 4.39 m",px:"1836 × 432 px",dur:"60s",frames:1,value:39000,weeks:[2],lat:-37.80832,lng:144.93583,spec:"L2",direction:"Northbound",market:"Melbourne — Central & West",desc:"Outbound 4. This impressive digital billboard targets traffic travelling north towards Melbourne Airport, positioned on the CityLink — a critical part of Melbourne's arterial road network that connects the inner city to the Tullamarine Freeway."},
+  {id:"3045-29-O",loc:"Melbourne Airport",sub:"Terminal Drive",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"13.5 × 3.9 m",px:"2732 × 768 px",dur:"10s",frames:1,value:43250,weeks:[6],lat:-37.67255,lng:144.84317,spec:"L5",direction:"Westbound",market:"Melbourne — North",desc:"Landmark digital gantry located across Airport Drive. This high-impact, full-motion site targets departing passengers."},
+  {id:"OVD-0557",loc:"Newtown, Geelong",sub:"Cnr Princes Hwy & Kilgour St",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[1],lat:-38.15003,lng:144.34601,spec:"L1",direction:"Southbound",market:"Melbourne — Central & West",desc:"At the busy intersection of Princes Hwy and Kilgour St in Geelong, next to the Geelong Football Club home ground. One of few high-impact Supersites in the area, capturing traffic heading south through the suburbs of Geelong."},
+  {id:"OVD-0137W",loc:"Thomastown",sub:"Metropolitan Ring Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.65 × 4.39 m",px:"1836 × 432 px",dur:"30s",frames:1,value:28000,weeks:[5],lat:-37.67896,lng:145.02158,spec:"L2",direction:"Northbound",market:"Melbourne — North",desc:"Spectacular site on the Metropolitan Ring Rd in Melbourne's northern suburbs. The Ring Road acts as the major circumferential arterial of Melbourne, attracting a large amount of traffic heading to the Tullamarine and Hume Freeways and to the airport from the north east."},
+  {id:"OVD-0158S",loc:"Lara",sub:"Princes Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[3],lat:-38.02482,lng:144.40605,spec:"L1",direction:"Westbound",market:"Melbourne — Central & West",desc:"On the Princes Freeway in Melbourne's south west. Impacts traffic heading south to Geelong, Queenscliff and Torquay, and commuters heading from Avalon and Melbourne Airports."},
+  {id:"OVD-0160E",loc:"Nunawading",sub:"Whitehorse Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[5],lat:-37.82173,lng:145.18098,spec:"L1",direction:"Eastbound",market:"Melbourne — East",desc:"In the hard-to-reach eastern suburbs, in the homemaker destination suburb of Nunawading. Impacts all traffic heading east towards Springvale Road and on to EastLink, Ringwood and the outer east."},
+  {id:"OVD-0165N",loc:"St Kilda",sub:"St Kilda Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"8.96 × 2.88 m",px:"1344 × 432 px",dur:"30s",frames:1,value:21500,weeks:[1],lat:-37.858,lng:144.9806,spec:"L3",direction:"Northbound",market:"Melbourne — Central & West",desc:"On St Kilda Road, impacting all traffic feeding from the Nepean Hwy towards St Kilda Junction where travellers continue along St Kilda Road or deviate via Queens Way, Princes Hwy or Punt Road."},
+  {id:"OVD-0166S",loc:"Seaford",sub:"Frankston Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[2],lat:-38.101,lng:145.13197,spec:"L1",direction:"Southbound",market:"Melbourne — South East",desc:"Digital supersite impacting all traffic heading southbound along the Frankston Fwy from EastLink and the Mornington Peninsula Fwy towards the bayside suburbs of Frankston, Mt Eliza and Mornington."},
+  {id:"OVD-0168E",loc:"Preston",sub:"Cnr Bell St & Plenty Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.88 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:39000,weeks:[1],lat:-37.74007,lng:145.00514,spec:"L2",direction:"Southbound",market:"Melbourne — North",desc:"Landmark premium digital that straddles the notoriously busy corner of Bell Street and Plenty Road, impacting traffic heading east along Bell Street and south along Plenty Road — reach and impact north-south and east-west of Preston."},
+  {id:"OVD-0171E",loc:"Yarraville",sub:"West Gate Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.88 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:39000,weeks:[3],lat:-37.81999,lng:144.895,spec:"L2",direction:"Eastbound",market:"Melbourne — Central & West",desc:"One of the heaviest traffic arterials in Melbourne. The West Gate caters to up-and-coming exclusive areas including Sanctuary Lakes, Point Cook, Williamstown, Spotswood and Yarraville. It also connects Melbourne with Geelong and the Surf Coast."},
+  {id:"OVD-0173W",loc:"Point Cook",sub:"Princes Freeway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:21500,weeks:[6],lat:-37.883,lng:144.7511,spec:"L1",direction:"Southbound",market:"Melbourne — Central & West",desc:"Princes Freeway is Victoria's busiest regional freeway connecting Melbourne with Geelong, the Surf Coast, the Great Ocean Road and the Bellarine Peninsula. Primary access route to the growth suburbs of Hoppers Crossing, Sanctuary Lakes, Werribee and Point Cook."},
+  {id:"OVD-0194W",loc:"Southbank",sub:"CityLink / West Gate Fwy",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"9.92 × 3.12 m",px:"1344 × 432 px",dur:"30s",frames:1,value:39000,weeks:[2],lat:-37.826,lng:144.954,spec:"L3",direction:"Westbound",market:"Melbourne — Central & West",desc:"Exceptional digital site on the southern side of the West Gate Freeway, opposite the Melbourne Exhibition Centre. Outstanding exposure to one of Melbourne's major freeways, close to CBD, Southgate, the arts precinct and the Casino."},
+  {id:"OVD-0195N",loc:"Tullamarine",sub:"Western Ring Road",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"19 × 4.42 m",px:"1836 × 432 px",dur:"30s",frames:1,value:34500,weeks:[3],lat:-37.7,lng:144.88,spec:"L2",direction:"Southbound",market:"Melbourne — North",desc:"Prominent Spectacular site engaging outbound traffic on the Metropolitan Ring Road, heading towards Gladstone Park and Broadmeadows. A key Melbourne artery spanning eight lanes, connecting the western and northern suburbs to other Victorian freeways."},
+  {id:"OVD-0325E",loc:"Burwood",sub:"267 Burwood Highway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"9 × 3 m",px:"1344 × 432 px",dur:"30s",frames:1,value:21500,weeks:[4],lat:-37.85,lng:145.11,spec:"L3",direction:"Eastbound",market:"Melbourne — South",desc:"Viewed travelling outbound on Burwood Highway, a major arterial feeding the eastern suburbs of Melbourne. Located beside Deakin University — heavy traffic flow ensures long viewing."},
+  {id:"OVD-0717E",loc:"Burnley",sub:"Monash Fwy · Burnley Tunnel",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.94 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:43250,weeks:[1],lat:-37.829,lng:145.001,spec:"L2",direction:"Eastbound",market:"Melbourne — Central & West",desc:"Impressive digital landmark delivering incredible impact and scale through its prominent solus eye-level positioning. The first billboard seen by traffic leaving the inner city via the Burnley Tunnel as it heads south towards Chadstone."},
+  {id:"OVD-0608N",loc:"Dandenong South",sub:"Eastlink Tollway",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.88 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:32000,weeks:[4],lat:-38.015,lng:145.22,spec:"L2",direction:"Northbound",market:"Melbourne — South East",desc:"Targets northbound traffic heading toward the CBD and eastern suburbs, impacting those travelling from the Mornington Peninsula and Frankston."},
+  {id:"OVD-0180E",loc:"Footscray",sub:"Cnr Buckley & Victoria Sts",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"5.76 × 2.88 m",px:"800 × 400 px",dur:"30s",frames:1,value:15000,weeks:[1],lat:-37.8,lng:144.895,spec:"L6",direction:"Eastbound",market:"Melbourne — Central & West",desc:"At a busy intersection, this digital site can be seen from three different directions by traffic from Footscray, Yarraville and Sunshine."},
+  {id:"OVD-0190E",loc:"Glen Iris",sub:"Monash Freeway",type:"road",region:"metro",cat:"Road Large Format · Portrait",dim:"5.12 × 7.68 m",px:"512 × 768 px",dur:"30s",frames:1,value:39000,weeks:[1],lat:-37.854,lng:145.067,spec:"L7",direction:"Southbound",market:"Melbourne — South",desc:"Located after the CityLink / Monash Fwy interchange at Toorak Road. This digital portrait impacts all traffic heading outbound on the Monash Fwy to the outer south eastern suburbs."},
+  {id:"OVD-0709N",loc:"West Melbourne",sub:"Bolte Bridge",type:"road",region:"metro",cat:"Road Large Format · Landscape",dim:"18.94 × 4.48 m",px:"1836 × 432 px",dur:"30s",frames:1,value:39000,weeks:[5],lat:-37.81,lng:144.936,spec:"L2",direction:"Northbound",market:"Melbourne — Central & West",desc:"Outbound 1. The first digital billboard seen by motorists heading out of Melbourne's inner city via the CityLink. Long, clean, unobstructed viewing on one of Australia's busiest motorways."},
   // Road Large Format - Regional
-  {id:"OVD-0141E",loc:"Shepparton",sub:"Knight St (Cnr Wyndham St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8.05 × 2.19 m",px:"792 × 216 px",dur:"30s",frames:1,value:17250,weeks:[1],spec:"L8",direction:"Eastbound",market:"Shepparton",desc:"Iconic digital billboard at the busy intersection of Knight & Wyndham Streets in Shepparton, capturing traffic entering the CBD from the west and north."},
-  {id:"OVD-0155E",loc:"Wodonga",sub:"Murray Valley Hwy",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8.05 × 2.19 m",px:"792 × 216 px",dur:"45s",frames:1,value:17250,weeks:[1],spec:"L8",direction:"Eastbound",market:"Albury",desc:"Long-viewing digital billboard capturing both local and tourist traffic from the Hume Freeway heading inbound to Wodonga CBD. Surrounded by auto dealers, commercial businesses, shopping centres and supermarkets."},
-  {id:"OVD-0191S",loc:"Ballarat, Sebastopol",sub:"Midland Highway",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8.96 × 2.88 m",px:"1344 × 432 px",dur:"30s",frames:1,value:17250,weeks:[2],spec:"L3",direction:"Southbound",market:"Ballarat",desc:"Impacts Ballarat's southern suburbs. Captures all traffic heading through Sebastopol and Delacombe, and those heading south to Geelong and the Surf Coast."},
-  {id:"OVD-0202W",loc:"Warrnambool",sub:"Princes Hwy (Raglan Pde)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:17250,weeks:[4],spec:"L1",direction:"Westbound",market:"Ballarat",desc:"On the western coastline of Victoria, Warrnambool is the western-most point and end of the iconic Great Ocean Road. A destination for over 350,000 visitors a year, positioned on the Princes Hwy connecting growth suburbs with the city centre."},
-  {id:"OVD-0203W",loc:"Latrobe Valley, Traralgon",sub:"Princes Hwy (Argyle St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:17250,weeks:[5],spec:"L1",direction:"Northbound",market:"Gippsland",desc:"Traralgon is the heart of the Gippsland region. Argyle St (Princes Hwy) runs through Traralgon and reaches a broad audience. Viewed on entry from the east, minutes from the CBD and proximate to Bunnings, Officeworks, Aldi and Harvey Norman."},
-  {id:"OVD-0205N",loc:"Bendigo",sub:"Mitchell St (Cnr Willis St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"5.76 × 2.88 m",px:"800 × 400 px",dur:"30s",frames:1,value:18000,weeks:[1],spec:"L6",direction:"Westbound",market:"Bendigo",desc:"Bendigo is Victoria's third most populated city, experiencing rapid growth with Melbournians relocating for a better work-life balance. Strategically positioned at a key CBD intersection — targets dual traffic flows from Myers St in the north and Mitchell St from the south-west."},
-  {id:"OVD-0207W",loc:"Gippsland East, Bairnsdale",sub:"Princes Hwy (Main St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8 × 2.08 m",px:"1224 × 324 px",dur:"30s",frames:1,value:17250,weeks:[3],spec:"L8",direction:"Westbound",market:"Gippsland",desc:"At the eastern end of the Gippsland region, Bairnsdale is a thriving coastal area. Main St (Princes Hwy) runs through Bairnsdale and reaches a broad audience — proximate to Bunnings and Kmart and located in the major Auto Alley of the region."},
+  {id:"OVD-0141E",loc:"Shepparton",sub:"Knight St (Cnr Wyndham St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8.05 × 2.19 m",px:"792 × 216 px",dur:"30s",frames:1,value:17250,weeks:[1],lat:-36.38201,lng:145.40003,spec:"L8",direction:"Eastbound",market:"Shepparton",desc:"Iconic digital billboard at the busy intersection of Knight & Wyndham Streets in Shepparton, capturing traffic entering the CBD from the west and north."},
+  {id:"OVD-0155E",loc:"Wodonga",sub:"Murray Valley Hwy",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8.05 × 2.19 m",px:"792 × 216 px",dur:"45s",frames:1,value:17250,weeks:[1],lat:-36.12399,lng:146.88016,spec:"L8",direction:"Eastbound",market:"Albury",desc:"Long-viewing digital billboard capturing both local and tourist traffic from the Hume Freeway heading inbound to Wodonga CBD. Surrounded by auto dealers, commercial businesses, shopping centres and supermarkets."},
+  {id:"OVD-0191S",loc:"Ballarat, Sebastopol",sub:"Midland Highway",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8.96 × 2.88 m",px:"1344 × 432 px",dur:"30s",frames:1,value:17250,weeks:[2],lat:-37.58,lng:143.858,spec:"L3",direction:"Southbound",market:"Ballarat",desc:"Impacts Ballarat's southern suburbs. Captures all traffic heading through Sebastopol and Delacombe, and those heading south to Geelong and the Surf Coast."},
+  {id:"OVD-0202W",loc:"Warrnambool",sub:"Princes Hwy (Raglan Pde)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:17250,weeks:[4],lat:-38.382,lng:142.481,spec:"L1",direction:"Westbound",market:"Ballarat",desc:"On the western coastline of Victoria, Warrnambool is the western-most point and end of the iconic Great Ocean Road. A destination for over 350,000 visitors a year, positioned on the Princes Hwy connecting growth suburbs with the city centre."},
+  {id:"OVD-0203W",loc:"Latrobe Valley, Traralgon",sub:"Princes Hwy (Argyle St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"12.48 × 3.2 m",px:"1224 × 324 px",dur:"30s",frames:1,value:17250,weeks:[5],lat:-38.196,lng:146.539,spec:"L1",direction:"Northbound",market:"Gippsland",desc:"Traralgon is the heart of the Gippsland region. Argyle St (Princes Hwy) runs through Traralgon and reaches a broad audience. Viewed on entry from the east, minutes from the CBD and proximate to Bunnings, Officeworks, Aldi and Harvey Norman."},
+  {id:"OVD-0205N",loc:"Bendigo",sub:"Mitchell St (Cnr Willis St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"5.76 × 2.88 m",px:"800 × 400 px",dur:"30s",frames:1,value:18000,weeks:[1],lat:-36.76,lng:144.279,spec:"L6",direction:"Westbound",market:"Bendigo",desc:"Bendigo is Victoria's third most populated city, experiencing rapid growth with Melbournians relocating for a better work-life balance. Strategically positioned at a key CBD intersection — targets dual traffic flows from Myers St in the north and Mitchell St from the south-west."},
+  {id:"OVD-0207W",loc:"Gippsland East, Bairnsdale",sub:"Princes Hwy (Main St)",type:"road",region:"regional",cat:"Road Large Format · Landscape",dim:"8 × 2.08 m",px:"1224 × 324 px",dur:"30s",frames:1,value:17250,weeks:[3],lat:-37.827,lng:147.609,spec:"L8",direction:"Westbound",market:"Gippsland",desc:"At the eastern end of the Gippsland region, Bairnsdale is a thriving coastal area. Main St (Princes Hwy) runs through Bairnsdale and reaches a broad audience — proximate to Bunnings and Kmart and located in the major Auto Alley of the region."},
   // Street furniture bundles - W1 front-loaded with 10 sites
   {id:"SFD-W1",loc:"Street Furniture · Week 1",sub:"10 Melbourne Metro Stations · front-loaded launch",type:"street",region:"metro",cat:"Street Furniture Digital · Rail Portrait",dim:"Portrait digital",px:"1080 × 1920 px",dur:"7s",frames:10,value:21950,weeks:[1],spec:"S1",direction:"Concourse · Platform",market:"Melbourne Metro",desc:"Ten station-platform and concourse panels across Melbourne metro stations including State Library, Town Hall, ANZAC (Domain), Arden and Flinders Street. The opening-week launch volume for street furniture."},
   {id:"SFD-W2",loc:"Street Furniture · Week 2",sub:"5 Melbourne Metro Stations",type:"street",region:"metro",cat:"Street Furniture Digital · Rail Portrait",dim:"Portrait digital",px:"1080 × 1920 px",dur:"7s",frames:5,value:10975,weeks:[2],spec:"S1",direction:"Concourse · Platform",market:"Melbourne Metro",desc:"Five rotating station panels through the metro network."},
@@ -873,10 +1119,91 @@ function renderSites(){
 
 function renderSiteEntry(s,n){
   const st = state.sites[s.id] || {status:"pending",notes:[]};
+  const statusLabel = st.status==="approved" ? "Approved" : st.status==="rejected" ? "Rejected" : "Pending";
+  const statusClass = st.status||"pending";
+  const hasImage = (s.type==="rail" || s.type==="road") && !s.noImg;
+  const imgSlug = s.id.replace(/\//g,"_");
+  const noteCount = (st.notes||[]).length;
+  const weekLabel = s.weeks.length === 1
+    ? WEEKS[s.weeks[0]-1].date
+    : s.weeks.length === WEEKS.length
+      ? "Full run"
+      : `${WEEKS[s.weeks[0]-1].date} +${s.weeks.length-1}`;
+
+  return `
+  <article class="site" data-site="${esc(s.id)}" style="--i:${Math.min(n-1, 24)}">
+    ${hasImage
+      ? `<div class="site-img"><img src="${esc(imgSlug)}.jpg" alt="${esc(s.loc)}" loading="lazy"></div>`
+      : `<div class="site-noimg" data-letter="${esc(SPECS[s.spec]?.letter || '')}"><div class="site-noimg-label">${esc(s.cat)}</div></div>`}
+    <div class="site-body">
+      <div class="site-folio-sm"><span>№ ${String(n).padStart(2,"0")}</span><span class="id">${esc(s.id)}</span></div>
+      <div class="site-title-sm">${esc(s.loc)}</div>
+      ${s.sub?`<div class="site-sub-sm">${esc(s.sub)}</div>`:''}
+      <div class="site-meta-sm">
+        <span>${esc(s.cat.split(' · ')[0])}</span>
+        <span class="dot">·</span>
+        <span>${s.region==="regional"?"Regional":"Metro"}</span>
+        <span class="dot">·</span>
+        <span class="wk">${esc(weekLabel)}</span>
+      </div>
+      <div class="site-foot">
+        <span class="site-status-pill ${statusClass}">${statusLabel}</span>
+        ${noteCount?`<span class="site-comments-count">${noteCount} comment${noteCount===1?'':'s'}</span>`:''}
+      </div>
+    </div>
+  </article>`;
+}
+
+function attachSiteEventListeners(){
+  document.querySelectorAll('.site').forEach(card=>{
+    card.addEventListener('click',(e)=>{
+      const id = card.dataset.site;
+      openDrawer(id);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// DRAWER (site detail)
+// ─────────────────────────────────────────────────────────────────
+const drawer = document.getElementById('drawer');
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+const drawerContent = document.getElementById('drawerContent');
+const drawerHeadId = document.getElementById('drawerHeadId');
+
+function openDrawer(siteId){
+  const s = SITES.find(x=>x.id===siteId);
+  if(!s) return;
+  drawerHeadId.textContent = s.id;
+  drawerContent.innerHTML = renderDrawerContent(s);
+  drawer.classList.add('open');
+  drawerBackdrop.classList.add('open');
+  drawer.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+  attachDrawerListeners(s);
+}
+function closeDrawer(){
+  drawer.classList.remove('open');
+  drawerBackdrop.classList.remove('open');
+  drawer.setAttribute('aria-hidden','true');
+  document.body.style.overflow='';
+}
+document.getElementById('drawerClose').addEventListener('click',closeDrawer);
+drawerBackdrop.addEventListener('click',closeDrawer);
+document.addEventListener('keydown',(e)=>{if(e.key==='Escape')closeDrawer();});
+
+function renderDrawerContent(s){
+  const st = state.sites[s.id] || {status:"pending",notes:[]};
+  const hasImage = (s.type==="rail" || s.type==="road") && !s.noImg;
+  const imgSlug = s.id.replace(/\//g,"_");
+  const statusLabel = st.status==="approved" ? "Approved" : st.status==="rejected" ? "Rejected" : "Pending";
+  const statusClass = st.status||"pending";
+
   const weekStrip = WEEKS.map(w=>{
     const live = s.weeks.includes(w.n);
     return `<div class="wk${live?' live':''}"><div class="d">${w.month}</div><div class="m">${w.num}</div></div>`;
   }).join("");
+
   const notes = (st.notes||[]).map((nt,idx)=>`
     <div class="note">
       <div class="note-head">
@@ -884,109 +1211,145 @@ function renderSiteEntry(s,n){
         <span class="when">${esc(nt.when)}</span>
       </div>
       <div class="note-body">${esc(nt.body)}</div>
-      <button class="note-delete" data-action="delete-note" data-site="${s.id}" data-idx="${idx}">remove</button>
+      <button class="note-delete" data-action="delete-note" data-site="${esc(s.id)}" data-idx="${idx}">remove</button>
     </div>`).join("");
 
-  const statusLabel = st.status==="approved" ? "Approved" : st.status==="rejected" ? "Rejected" : "Pending";
-  const statusClass = st.status||"pending";
-  const hasImage = (s.type==="rail" || s.type==="road") && !s.noImg;
-  const imgSlug = s.id.replace(/\//g,"_");
-
   return `
-  <article class="site" data-site="${s.id}">
-    <div class="site-folio">№ ${String(n).padStart(2,"0")}<span class="id">${esc(s.id)}</span></div>
-
-    <div class="site-main">
-      ${hasImage?`<div class="site-img"><img src="${esc(imgSlug)}.jpg" alt="${esc(s.loc)} — site reference" loading="lazy"></div>`:''}
-      <div class="site-cat">
-        <span>${esc(s.cat)}</span><span class="dot"></span>
-        <span>${s.region==="regional"?"Regional":"Metro"}</span>
-        ${s.direction?`<span class="dot"></span><span>${esc(s.direction)}</span>`:''}
-        ${s.market?`<span class="dot"></span><span>${esc(s.market)}</span>`:''}
-        <span class="dot"></span>
-        <span class="status ${statusClass}">${statusLabel}</span>
-      </div>
-      <h3 class="site-title">${esc(s.loc)}<span class="muted it"> · ${esc(s.sub)}</span></h3>
-      ${s.desc?`<p class="site-desc">${esc(s.desc)}</p>`:''}
-      <div class="site-meta"><span class="dim">${esc(s.dim)} · ${esc(s.px)} · ${esc(s.dur)}${s.frames>1?` · ${s.frames} frames`:''}</span></div>
-
-      <div class="site-spec-table">
-        <div class="spec-cell"><div class="k">Media value</div><div class="v">$${s.value.toLocaleString()}</div></div>
-        <div class="spec-cell"><div class="k">Spec</div><div class="v">${SPECS[s.spec]?.letter ?? ""} · ${esc(SPECS[s.spec]?.name?.split(" · ")[0] ?? s.spec)}</div></div>
-        <div class="spec-cell"><div class="k">Week${s.weeks.length>1?'s':''}</div><div class="v">${s.weeks.map(w=>WEEKS[w-1].date).join(", ")}</div></div>
-        <div class="spec-cell"><div class="k">Booking</div><div class="v">PAID</div></div>
-      </div>
-
-      <div class="week-strip">${weekStrip}</div>
+    ${hasImage?`<div class="detail-img"><img src="${esc(imgSlug)}.jpg" alt="${esc(s.loc)}"></div>`:''}
+    <div class="detail-cat">
+      <span>${esc(s.cat)}</span><span class="dot"></span>
+      <span>${s.region==="regional"?"Regional":"Metro"}</span>
+      ${s.direction?`<span class="dot"></span><span>${esc(s.direction)}</span>`:''}
+      ${s.market?`<span class="dot"></span><span>${esc(s.market)}</span>`:''}
+      <span class="dot"></span>
+      <span class="status ${statusClass}">${statusLabel}</span>
     </div>
-
+    <h2 class="detail-title">${esc(s.loc)}<span class="sub">${esc(s.sub)}</span></h2>
+    <p class="detail-meta">${esc(s.dim)} · ${esc(s.px)} · ${esc(s.dur)}${s.frames>1?` · ${s.frames} frames`:''}</p>
+    ${s.desc?`<p class="detail-desc">${esc(s.desc)}</p>`:''}
+    <div class="site-spec-table">
+      <div class="spec-cell"><div class="k">Media value</div><div class="v">$${s.value.toLocaleString()}</div></div>
+      <div class="spec-cell"><div class="k">Spec</div><div class="v">${SPECS[s.spec]?.letter ?? ""} · ${esc(SPECS[s.spec]?.name?.split(" · ")[0] ?? s.spec)}</div></div>
+    </div>
+    <div class="week-strip">${weekStrip}</div>
     <div class="site-copy">
       <div class="copy-section">
         <div class="k">Headline</div>
-        <textarea data-field="headline" data-site="${s.id}" rows="1" placeholder="Headline for this site…">${esc(st.headline||"")}</textarea>
+        <textarea data-field="headline" data-site="${esc(s.id)}" rows="1" placeholder="Headline for this site…">${esc(st.headline||"")}</textarea>
       </div>
       <div class="copy-section">
         <div class="k">Sub-claim / offer</div>
-        <textarea data-field="sub" data-site="${s.id}" rows="1" placeholder="Sub-claim or offer…">${esc(st.sub||"")}</textarea>
+        <textarea data-field="sub" data-site="${esc(s.id)}" rows="1" placeholder="Sub-claim or offer…">${esc(st.sub||"")}</textarea>
       </div>
       <div class="copy-section">
         <div class="k">Compliance note</div>
-        <textarea data-field="compliance" data-site="${s.id}" rows="1" placeholder="T&amp;Cs, disclaimers, anything legal needs to see…">${esc(st.compliance||"")}</textarea>
-      </div>
-
-      <div class="thread">
-        ${notes || `<div class="thread-empty">No comments yet.</div>`}
-        <div class="thread-add">
-          <textarea data-action="thread-input" data-site="${s.id}" placeholder="Leave a comment or context…"></textarea>
-          <div class="thread-actions">
-            <button class="btn" data-action="comment" data-site="${s.id}">Add comment</button>
-            <button class="btn btn-approve" data-action="approve" data-site="${s.id}">Approve site</button>
-            <button class="btn btn-reject" data-action="reject" data-site="${s.id}">Reject</button>
-          </div>
-        </div>
+        <textarea data-field="compliance" data-site="${esc(s.id)}" rows="1" placeholder="T&amp;Cs, disclaimers, anything legal needs to see…">${esc(st.compliance||"")}</textarea>
       </div>
     </div>
-  </article>`;
+    <div class="thread">
+      <div class="thread-title">Comments &amp; approval</div>
+      ${notes || `<div class="thread-empty">No comments yet.</div>`}
+      <div class="thread-add">
+        <textarea data-action="thread-input" data-site="${esc(s.id)}" placeholder="Leave a comment or context…"></textarea>
+        <div class="thread-actions">
+          <button class="btn" data-action="comment" data-site="${esc(s.id)}">Add comment</button>
+          <button class="btn btn-approve" data-action="approve" data-site="${esc(s.id)}">Approve site</button>
+          <button class="btn btn-reject" data-action="reject" data-site="${esc(s.id)}">Reject</button>
+        </div>
+      </div>
+    </div>`;
 }
 
-function attachSiteEventListeners(){
-  document.querySelectorAll('textarea[data-field]').forEach(ta=>{
-    ta.addEventListener('input',(e)=>{
+function attachDrawerListeners(s){
+  drawerContent.querySelectorAll('textarea[data-field]').forEach(ta=>{
+    ta.addEventListener('input',()=>{
       const id = ta.dataset.site, field = ta.dataset.field;
       if(!state.sites[id]) state.sites[id] = {status:"pending",notes:[]};
       state.sites[id][field] = ta.value;
       saveState();
     });
   });
-
-  document.querySelectorAll('[data-action]').forEach(btn=>{
-    btn.addEventListener('click',(e)=>{
+  drawerContent.querySelectorAll('[data-action]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
       const id = btn.dataset.site;
       const action = btn.dataset.action;
       if(action==="approve" || action==="reject"){
         const newStatus = action==="approve" ? "approved" : "rejected";
-        const old = state.sites[id]?.status || "pending";
         state.sites[id].status = newStatus;
         pushLog(id, newStatus, "");
-        if(old!==newStatus){
-          renderCover();renderSites();
-        }
+        renderCover();renderSites();
+        // refresh drawer to show new status
+        openDrawer(id);
       } else if(action==="comment"){
-        const input = document.querySelector(`textarea[data-action="thread-input"][data-site="${id}"]`);
+        const input = drawerContent.querySelector(`textarea[data-action="thread-input"][data-site="${id}"]`);
         const body = input?.value.trim();
         if(!body) return;
         const note = {actor:actorOrAnon(),role:state.user.role,when:nowStr(),body};
         state.sites[id].notes = state.sites[id].notes || [];
         state.sites[id].notes.push(note);
         pushLog(id,"message",body);
-        renderSites();
+        openDrawer(id); // re-render drawer
+        renderSites(); // update comment counts on cards
       } else if(action==="delete-note"){
         const idx = parseInt(btn.dataset.idx,10);
         state.sites[id].notes.splice(idx,1);
-        saveState();renderSites();
+        saveState();openDrawer(id);renderSites();
       }
     });
   });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MAP VIEW
+// ─────────────────────────────────────────────────────────────────
+let mapInstance = null;
+function initMap(){
+  if(mapInstance) return;
+  if(typeof L === 'undefined'){ // Leaflet not yet loaded
+    setTimeout(initMap, 200);
+    return;
+  }
+  mapInstance = L.map('map', {
+    scrollWheelZoom: true,
+    zoomControl: true
+  }).setView([-37.85, 145.0], 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(mapInstance);
+
+  const markers = [];
+  SITES.filter(s => s.lat && s.lng).forEach(s => {
+    const color = s.type === 'rail' ? '#4A5D3F' : '#1A1612';
+    const marker = L.circleMarker([s.lat, s.lng], {
+      radius: 7, fillColor: color, color: '#F1ECE2',
+      weight: 2, opacity: 1, fillOpacity: 0.95
+    }).addTo(mapInstance);
+
+    const popupHtml = `
+      <strong>${esc(s.loc)}</strong>
+      <div class="pop-meta">${esc(s.id)} · ${esc(s.cat.split(' · ')[0])}</div>
+      <a href="#" data-open-site="${esc(s.id)}">Open site card →</a>
+    `;
+    marker.bindPopup(popupHtml);
+    markers.push(marker);
+  });
+
+  // Wire up popup links to open the drawer
+  mapInstance.on('popupopen', (e)=>{
+    const link = e.popup.getElement().querySelector('[data-open-site]');
+    if(link) link.addEventListener('click', (ev)=>{
+      ev.preventDefault();
+      mapInstance.closePopup();
+      openDrawer(link.dataset.openSite);
+    });
+  });
+
+  // Fit bounds to all markers with some padding
+  if(markers.length){
+    const group = L.featureGroup(markers);
+    mapInstance.fitBounds(group.getBounds().pad(0.08));
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1094,6 +1457,11 @@ function setView(v){
   if(v==="build") renderBuilds();
   if(v==="log") renderLog();
   if(v==="sites") renderSites();
+  if(v==="map"){
+    initMap();
+    // Leaflet needs a size invalidation after the panel becomes visible
+    if(mapInstance) setTimeout(()=>mapInstance.invalidateSize(),50);
+  }
 }
 
 document.querySelectorAll(".nav-tab").forEach(t=>{
