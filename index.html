@@ -867,7 +867,7 @@ function renderSiteEntry(s,n){
     <div class="site-folio">№ ${String(n).padStart(2,"0")}<span class="id">${esc(s.id)}</span></div>
 
     <div class="site-main">
-      ${hasImage?`<div class="site-img"><img src="sites/${esc(imgSlug)}.jpg" alt="${esc(s.loc)} — site reference" loading="lazy"></div>`:''}
+      ${hasImage?`<div class="site-img"><img src="${esc(imgSlug)}.jpg" alt="${esc(s.loc)} — site reference" loading="lazy"></div>`:''}
       <div class="site-cat">
         <span>${esc(s.cat)}</span><span class="dot"></span>
         <span>${s.region==="regional"?"Regional":"Metro"}</span>
