@@ -184,6 +184,58 @@ em{font-style:italic}
   font-family:var(--body);font-size:14.5px;line-height:1.55;color:var(--ink-mute);
 }
 
+/* ─── spec key panel ─── */
+.spec-key{
+  border:1px solid var(--rule);
+  background:rgba(255,255,255,0.4);
+  padding:16px 20px;
+  margin-bottom:24px;
+}
+.spec-key-head{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:12px;gap:14px;
+}
+.spec-key-title{
+  font-family:var(--ui);font-size:10.5px;font-weight:600;
+  letter-spacing:0.14em;text-transform:uppercase;color:var(--ink);
+}
+.spec-key-hint{
+  font-family:var(--body);font-size:12px;color:var(--ink-mute);font-style:italic;
+}
+.spec-key-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:4px 18px;
+}
+.spec-chip{
+  display:flex;align-items:baseline;gap:8px;
+  padding:5px 8px 5px 6px;
+  border:1px solid transparent;
+  font-family:var(--ui);font-size:12px;color:var(--ink-soft);
+  text-align:left;
+  transition:background .12s,border-color .12s;
+}
+.spec-chip:hover{background:rgba(255,255,255,0.7);border-color:var(--rule-soft)}
+.spec-chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.spec-chip.active .spec-chip-letter{color:var(--paper);border-color:var(--paper)}
+.spec-chip.active .spec-chip-count{color:var(--paper);opacity:0.7}
+.spec-chip-letter{
+  font-family:var(--serif);font-weight:600;font-size:15px;
+  border:1px solid var(--ink);
+  min-width:22px;text-align:center;padding:1px 4px 2px;
+  line-height:1;
+  color:var(--ink);
+  flex-shrink:0;
+}
+.spec-chip-name{flex:1;line-height:1.25}
+.spec-chip-count{
+  font-family:var(--body);font-style:italic;font-size:11px;
+  color:var(--ink-faint);
+}
+@media (max-width:600px){
+  .spec-key-grid{grid-template-columns:1fr}
+}
+
 /* ─── filters strip ─── */
 .filters{
   border-top:1px solid var(--rule);
@@ -268,6 +320,47 @@ em{font-style:italic}
   overflow:hidden;
   border-bottom:1px solid var(--rule-soft);
   margin:0;
+  position:relative;
+}
+
+/* Spec letter badge — sits in top-right of image or noImg area */
+.spec-badge{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:3;
+  background:var(--paper);
+  border:1.5px solid var(--ink);
+  padding:5px 9px 6px;
+  text-align:center;
+  min-width:34px;
+  box-shadow:0 2px 8px rgba(26,22,18,0.18);
+  cursor:pointer;
+  transition:background .15s ease, transform .15s ease;
+  pointer-events:auto;
+}
+.spec-badge:hover{
+  background:var(--ink);color:var(--paper);
+  transform:scale(1.06);
+}
+.spec-badge:hover .spec-lbl{color:var(--paper);opacity:0.7}
+.spec-badge.active{
+  background:var(--ink);color:var(--paper);
+}
+.spec-badge.active .spec-lbl{color:var(--paper);opacity:0.7}
+.spec-lbl{
+  display:block;
+  font-family:var(--ui);font-weight:600;
+  font-size:7.5px;letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--ink-mute);
+  margin-bottom:1px;line-height:1;
+}
+.spec-let{
+  display:block;
+  font-family:var(--serif);font-weight:600;
+  font-size:19px;line-height:1;
+  color:inherit;
 }
 .site-img img{
   width:100%;height:100%;
@@ -834,6 +927,8 @@ em{font-style:italic}
       <p class="section-dek">Twenty-eight roadside and eleven rail panels, five street-furniture bundles across Melbourne metro, and a retail network of sixty centres with the heaviest rotation in the opening week. Read on, or filter to what you care about.</p>
     </header>
 
+    <div class="spec-key" id="specKey"></div>
+
     <div class="filters" id="filters">
       <div class="filter-group">
         <span class="group-label">Region</span>
@@ -1097,21 +1192,73 @@ function renderCover(){
 // ─────────────────────────────────────────────────────────────────
 // SITES VIEW
 // ─────────────────────────────────────────────────────────────────
-let filters = {region:"all",type:"all",status:"all"};
+let filters = {region:"all",type:"all",status:"all",spec:"all"};
 
 function siteMatches(s){
   if(filters.region!=="all" && s.region!==filters.region) return false;
   if(filters.type!=="all" && s.type!==filters.type) return false;
   if(filters.status!=="all" && (state.sites[s.id]?.status||"pending")!==filters.status) return false;
+  if(filters.spec!=="all" && s.spec!==filters.spec) return false;
   return true;
 }
 
 function renderSites(){
   const list = document.getElementById("siteList");
-  const visible = SITES.filter(siteMatches);
+  let visible = SITES.filter(siteMatches);
+  // When filtered by spec, keep PDF order; when filtered by anything else, also keep order.
+  // When NO spec filter applied, we can offer a "sort by spec" but default stays PDF page order.
   document.getElementById("filterResult").textContent = `${visible.length} of ${SITES.length} sites shown`;
   list.innerHTML = visible.map((s,i)=>renderSiteEntry(s,i+1)).join("");
+  renderSpecKey();
   attachSiteEventListeners();
+}
+
+// Build the spec key panel — shows each spec letter with its name and site count.
+// Clicking a letter filters the grid to that spec.
+function renderSpecKey(){
+  const keyEl = document.getElementById("specKey");
+  if(!keyEl) return;
+  // Count sites per spec key (across all SITES)
+  const counts = {};
+  for(const s of SITES){
+    counts[s.spec] = (counts[s.spec]||0) + 1;
+  }
+  // Order specs by letter (A→M)
+  const ordered = Object.entries(SPECS).sort((a,b)=> a[1].letter.localeCompare(b[1].letter));
+  const chips = ordered.map(([key,spec])=>{
+    const count = counts[key]||0;
+    if(count===0) return '';
+    const active = filters.spec===key ? ' active' : '';
+    const shortName = spec.name.replace(/^(Rail|Road|Street Furniture|Retail)( Consecutive| Large Format)?( ·)? /,'').trim();
+    return `<button class="spec-chip${active}" data-spec="${esc(key)}">
+      <span class="spec-chip-letter">${esc(spec.letter)}</span>
+      <span class="spec-chip-name">${esc(spec.name)}</span>
+      <span class="spec-chip-count">${count}</span>
+    </button>`;
+  }).join("");
+  const activeHint = filters.spec==="all"
+    ? 'Each card carries its spec letter — click any letter below or any badge on a card to isolate sites with that build.'
+    : `Showing only Spec ${SPECS[filters.spec]?.letter} — ${SPECS[filters.spec]?.name}.`;
+  keyEl.innerHTML = `
+    <div class="spec-key-head">
+      <span class="spec-key-title">Build Spec Key</span>
+      <span class="spec-key-hint">${activeHint}</span>
+    </div>
+    <div class="spec-key-grid">
+      <button class="spec-chip${filters.spec==='all'?' active':''}" data-spec="all">
+        <span class="spec-chip-letter">∗</span>
+        <span class="spec-chip-name">All specs</span>
+        <span class="spec-chip-count">${SITES.length}</span>
+      </button>
+      ${chips}
+    </div>`;
+  // Wire up clicks
+  keyEl.querySelectorAll('.spec-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      filters.spec = btn.dataset.spec;
+      renderSites();
+    });
+  });
 }
 
 function renderSiteEntry(s,n){
@@ -1126,12 +1273,15 @@ function renderSiteEntry(s,n){
     : s.weeks.length === WEEKS.length
       ? "Full run"
       : `${WEEKS[s.weeks[0]-1].date} +${s.weeks.length-1}`;
+  const specLetter = SPECS[s.spec]?.letter || '?';
+  const specActive = filters.spec===s.spec ? ' active' : '';
+  const badge = `<button class="spec-badge${specActive}" data-spec="${esc(s.spec)}" title="Filter to all sites with Spec ${esc(specLetter)}: ${esc(SPECS[s.spec]?.name||'')}"><span class="spec-lbl">Spec</span><span class="spec-let">${esc(specLetter)}</span></button>`;
 
   return `
   <article class="site" data-site="${esc(s.id)}" style="--i:${Math.min(n-1, 24)}">
     ${hasImage
-      ? `<div class="site-img"><img src="${esc(imgSlug)}.jpg" alt="${esc(s.loc)}" loading="lazy"></div>`
-      : `<div class="site-noimg" data-letter="${esc(SPECS[s.spec]?.letter || '')}"><div class="site-noimg-label">${esc(s.cat)}</div></div>`}
+      ? `<div class="site-img"><img src="${esc(imgSlug)}.jpg" alt="${esc(s.loc)}" loading="lazy">${badge}</div>`
+      : `<div class="site-noimg" data-letter="${esc(specLetter)}"><div class="site-noimg-label">${esc(s.cat)}</div>${badge}</div>`}
     <div class="site-body">
       <div class="site-folio-sm"><span>№ ${String(n).padStart(2,"0")}</span><span class="id">${esc(s.id)}</span></div>
       <div class="site-title-sm">${esc(s.loc)}</div>
@@ -1154,8 +1304,18 @@ function renderSiteEntry(s,n){
 function attachSiteEventListeners(){
   document.querySelectorAll('.site').forEach(card=>{
     card.addEventListener('click',(e)=>{
-      const id = card.dataset.site;
-      openDrawer(id);
+      // If user clicked the spec badge, filter instead of opening drawer
+      if(e.target.closest('.spec-badge')){
+        const badge = e.target.closest('.spec-badge');
+        const spec = badge.dataset.spec;
+        filters.spec = (filters.spec === spec) ? "all" : spec;
+        renderSites();
+        // scroll the spec key into view so the user sees the active filter
+        document.getElementById('specKey')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+        e.stopPropagation();
+        return;
+      }
+      openDrawer(card.dataset.site);
     });
   });
 }
